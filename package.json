@@ -1,0 +1,28 @@
+{
+  "name": "uagc-lead-testing-typescript",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Safe Playwright and TypeScript automation for UAGC lead-form testing.",
+  "type": "module",
+  "engines": {
+    "node": ">=22 <27"
+  },
+  "scripts": {
+    "install:browsers": "playwright install",
+    "discover": "playwright test tests/form-discovery.spec.ts --project=chromium-desktop --reporter=line",
+    "test": "playwright test tests/lead-form.safe-smoke.spec.ts --project=chromium-desktop",
+    "test:headed": "playwright test tests/lead-form.safe-smoke.spec.ts --project=chromium-desktop --headed",
+    "test:ui": "playwright test --ui",
+    "test:all": "playwright test",
+    "test:cross-browser": "playwright test tests/lead-form.safe-smoke.spec.ts",
+    "test:mocked": "playwright test tests/lead-form.mocked-submission.spec.ts --project=chromium-desktop",
+    "test:sandbox": "playwright test tests/lead-form.sandbox-integration.spec.ts --project=chromium-desktop",
+    "typecheck": "tsc --noEmit",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@types/node": "^22.18.0",
+    "typescript": "5.9.2"
+  }
+}

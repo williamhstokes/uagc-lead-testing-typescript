@@ -1,0 +1,52 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Lead Tests: Bootstrap Windows project",
+      "type": "shell",
+      "command": "powershell -ExecutionPolicy Bypass -File ./setup.ps1",
+      "problemMatcher": []
+    },
+    {
+      "label": "Lead Tests: Install dependencies",
+      "type": "shell",
+      "command": "npm install",
+      "problemMatcher": []
+    },
+    {
+      "label": "Lead Tests: Install Chromium",
+      "type": "shell",
+      "command": "npx playwright install chromium",
+      "problemMatcher": []
+    },
+    {
+      "label": "Lead Tests: Discover form",
+      "type": "shell",
+      "command": "npm run discover",
+      "problemMatcher": []
+    },
+    {
+      "label": "Lead Tests: Safe smoke suite",
+      "type": "shell",
+      "command": "npm test",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Lead Tests: Mocked payload contract",
+      "type": "shell",
+      "command": "npm run test:mocked",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Lead Tests: Open HTML report",
+      "type": "shell",
+      "command": "npm run report",
+      "problemMatcher": []
+    }
+  ]
+}

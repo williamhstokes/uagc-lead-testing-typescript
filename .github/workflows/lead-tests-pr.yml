@@ -1,0 +1,81 @@
+name: UAGC Lead Tests - Pull Request
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: lead-tests-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  deployments: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  deploy-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Deploy pull request to Pantheon Multidev
+        id: pantheon
+        uses: pantheon-systems/push-to-pantheon@0.9.3
+        with:
+          ssh_key: ${{ secrets.PANTHEON_SSH_KEY }}
+          machine_token: ${{ secrets.PANTHEON_MACHINE_TOKEN }}
+          site: ${{ vars.PANTHEON_SITE }}
+          source_env: test
+          clone_content: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run non-submitting smoke tests
+        run: npm test
+        env:
+          BASE_URL: ${{ steps.pantheon.outputs.target_env_url }}
+          LEAD_FORM_PATH: /request-information
+          TARGET_ENV: multidev
+
+      - name: Run mocked payload-contract test
+        if: ${{ vars.LEAD_ENDPOINT_URL_PATTERN != '' }}
+        run: npm run test:mocked
+        env:
+          BASE_URL: ${{ steps.pantheon.outputs.target_env_url }}
+          LEAD_FORM_PATH: /request-information
+          TARGET_ENV: multidev
+          ENABLE_MOCKED_SUBMISSION: true
+          LEAD_ENDPOINT_URL_PATTERN: ${{ vars.LEAD_ENDPOINT_URL_PATTERN }}
+          TEST_STATE_LABEL: ${{ vars.TEST_STATE_LABEL }}
+          TEST_INTEREST_LABEL: ${{ vars.TEST_INTEREST_LABEL }}
+          TEST_DEGREE_LABEL: ${{ vars.TEST_DEGREE_LABEL }}
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload test artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lead-test-results-${{ github.run_id }}
+          path: test-results/
+          retention-days: 30

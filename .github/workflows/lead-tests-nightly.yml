@@ -1,0 +1,69 @@
+name: UAGC Lead Tests - Nightly
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 9 * * 1-5'
+
+permissions:
+  contents: read
+
+jobs:
+  cross-browser-and-sandbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run cross-browser non-submitting tests
+        run: npm run test:cross-browser
+        env:
+          BASE_URL: ${{ vars.PANTHEON_TEST_URL }}
+          LEAD_FORM_PATH: /request-information
+          TARGET_ENV: test
+
+      - name: Run one controlled sandbox integration test
+        run: npm run test:sandbox
+        env:
+          BASE_URL: ${{ vars.PANTHEON_TEST_URL }}
+          LEAD_FORM_PATH: /request-information
+          TARGET_ENV: test
+          ENABLE_SANDBOX_SUBMISSION: ${{ vars.ENABLE_SANDBOX_SUBMISSION }}
+          SANDBOX_SUBMISSION_CONFIRMATION: ${{ secrets.SANDBOX_SUBMISSION_CONFIRMATION }}
+          SAFE_SUBMISSION_HOSTS: ${{ vars.SAFE_SUBMISSION_HOSTS }}
+          TEST_EMAIL_DOMAIN: ${{ vars.TEST_EMAIL_DOMAIN }}
+          TEST_PHONE: ${{ secrets.TEST_PHONE }}
+          TEST_STATE_LABEL: ${{ vars.TEST_STATE_LABEL }}
+          TEST_INTEREST_LABEL: ${{ vars.TEST_INTEREST_LABEL }}
+          TEST_DEGREE_LABEL: ${{ vars.TEST_DEGREE_LABEL }}
+          CRM_VERIFY_URL_TEMPLATE: ${{ vars.CRM_VERIFY_URL_TEMPLATE }}
+          CRM_VERIFY_TOKEN: ${{ secrets.CRM_VERIFY_TOKEN }}
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-playwright-report-${{ github.run_id }}
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload test artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-lead-test-results-${{ github.run_id }}
+          path: test-results/
+          retention-days: 30
